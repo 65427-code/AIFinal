@@ -1,0 +1,25 @@
+# Python cache and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv/
+env/
+venv/
+.streamlit/
+.DS_Store
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+
+# Datasets and raw captures
+archive/
+*.csv
+*.pcap
+*.pcapng
+*.zip
+*.tar.gz
+*.gz
+*.parquet
