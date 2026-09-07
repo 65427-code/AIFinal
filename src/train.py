@@ -7,6 +7,7 @@ Trains Random Forest and XGBoost models, benchmarks security metrics, and export
 import os
 import json
 import joblib
+import argparse
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -87,7 +88,7 @@ def evaluate_model(name, model, X_test, y_test, label_encoder, is_binary=False):
         "classification_report": cls_report
     }
 
-def main():
+def main(test_size: float = 0.20):
     print("=" * 60)
     print("AI-BASED ENCRYPTED TRAFFIC THREAT DETECTION: MODEL TRAINING")
     print("=" * 60)
@@ -114,9 +115,11 @@ def main():
         cnt = np.sum(y == idx)
         print(f"  [{idx}] {cls_name:16s}: {cnt:6,d} samples")
         
-    print("\nSplitting into 80% train and 20% test sets (stratified)...")
+    train_pct = (1.0 - test_size) * 100
+    test_pct = test_size * 100
+    print(f"\nSplitting into {train_pct:.0f}% train and {test_pct:.0f}% test sets (stratified)...")
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.20, random_state=42, stratify=y
+        X, y, test_size=test_size, random_state=42, stratify=y
     )
     print(f"Train samples: {len(X_train):,}, Test samples: {len(X_test):,}")
     
@@ -227,4 +230,12 @@ def main():
     print("=" * 60)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Train AI Encrypted Traffic Threat Detection models.")
+    parser.add_argument(
+        "--test-size",
+        type=float,
+        default=0.20,
+        help="Proportion of the dataset to include in the test split (default: 0.20 for 80%% train / 20%% test)"
+    )
+    args = parser.parse_args()
+    main(test_size=args.test_size)
