@@ -112,7 +112,9 @@ def extract_flows_from_pcap(pcap_source, max_packets=50000):
                 win_size = -1
                 
                 if is_tcp:
-                    header_len = (ip_layer.ihl * 4 if IP in pkt else 40) + (transport.dataofs * 4)
+                    ip_hdr_len = ip_layer.ihl * 4 if IP in pkt else 40
+                    trans_hdr_len = transport.dataofs * 4
+                    header_len = ip_hdr_len + trans_hdr_len
                     payload_len = max(0, pkt_len - header_len)
                     win_size = transport.window
                     flags_val = int(transport.flags)
@@ -123,13 +125,16 @@ def extract_flows_from_pcap(pcap_source, max_packets=50000):
                     tcp_flags["ACK"] = 1 if flags_val & 0x10 else 0
                     tcp_flags["URG"] = 1 if flags_val & 0x20 else 0
                 else:
-                    header_len = (ip_layer.ihl * 4 if IP in pkt else 40) + 8
+                    ip_hdr_len = ip_layer.ihl * 4 if IP in pkt else 40
+                    trans_hdr_len = 8
+                    header_len = ip_hdr_len + 8
                     payload_len = max(0, pkt_len - header_len)
                     
                 pkt_data = {
                     "time": ts,
                     "len": pkt_len,
                     "header_len": header_len,
+                    "trans_hdr_len": trans_hdr_len,
                     "payload_len": payload_len,
                     "is_tcp": is_tcp,
                     "tcp_flags": tcp_flags,
@@ -169,10 +174,10 @@ def extract_flows_from_pcap(pcap_source, max_packets=50000):
         duration_sec = f["last_time"] - f["start_time"]
         duration_us = max(0.0, duration_sec * 1e6)
         
-        # Packet length statistics
-        all_lens = [p["len"] for p in all_pkts]
-        fwd_lens = [p["len"] for p in fwd_pkts] if fwd_pkts else [0]
-        bwd_lens = [p["len"] for p in bwd_pkts] if bwd_pkts else [0]
+        # Packet length statistics (payload lengths matching CICIDS2017 schema)
+        all_lens = [p["payload_len"] for p in all_pkts]
+        fwd_lens = [p["payload_len"] for p in fwd_pkts] if fwd_pkts else [0]
+        bwd_lens = [p["payload_len"] for p in bwd_pkts] if bwd_pkts else [0]
         
         tot_len_fwd = sum(fwd_lens)
         tot_len_bwd = sum(bwd_lens) if bwd_pkts else 0
@@ -220,9 +225,9 @@ def extract_flows_from_pcap(pcap_source, max_packets=50000):
         urg_cnt = sum(p["tcp_flags"]["URG"] for p in all_pkts)
         fwd_psh_flags = sum(p["tcp_flags"]["PSH"] for p in fwd_pkts)
         
-        # Headers & Windows
-        fwd_hdr_len = sum(p["header_len"] for p in fwd_pkts)
-        bwd_hdr_len = sum(p["header_len"] for p in bwd_pkts)
+        # Headers & Windows (Transport header lengths matching CICIDS2017 schema)
+        fwd_hdr_len = sum(p.get("trans_hdr_len", p["header_len"]) for p in fwd_pkts)
+        bwd_hdr_len = sum(p.get("trans_hdr_len", p["header_len"]) for p in bwd_pkts)
         
         init_win_fwd = -1
         for p in fwd_pkts:
@@ -237,7 +242,7 @@ def extract_flows_from_pcap(pcap_source, max_packets=50000):
                 break
                 
         act_data_fwd = sum(1 for p in fwd_pkts if p["payload_len"] > 0)
-        min_seg_fwd = min((p["header_len"] for p in fwd_pkts), default=20)
+        min_seg_fwd = min((p.get("trans_hdr_len", p["header_len"]) for p in fwd_pkts), default=20)
         
         down_up_ratio = (tot_bwd / tot_fwd) if tot_fwd > 0 else 0.0
         avg_pkt_size = sum(all_lens) / tot_pkts if tot_pkts > 0 else 0.0
@@ -334,7 +339,7 @@ def extract_flows_from_pcap(pcap_source, max_packets=50000):
             "Destination_Port": f["fwd_dst_port"],
             "Protocol": "TCP" if f["protocol"] == 6 else ("UDP" if f["protocol"] == 17 else str(f["protocol"])),
             "Packets": tot_pkts,
-            "Bytes": tot_len_fwd + tot_len_bwd
+            "Bytes": sum(p["len"] for p in all_pkts)
         }
         
         flow_rows.append(row)
