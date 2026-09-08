@@ -1,25 +1,89 @@
-# Python cache and environments
+# ==============================================================================
+# Git Ignore Configuration - AI-Based Encrypted Traffic Threat Detection
+# ==============================================================================
+
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Virtual Environments & Configuration
 .env
 .venv/
 env/
 venv/
-.streamlit/
-.DS_Store
+ENV/
+env.bak/
+venv.bak/
 
-# IDE and editor files
+# Streamlit Local Config
+.streamlit/
+
+# IDE & Editor files
 .idea/
 .vscode/
 *.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
 
-# Datasets and raw captures
+# Operating System artifacts
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# ==============================================================================
+# Large Datasets & Raw Packet Captures (Do Not Commit Large Binaries)
+# ==============================================================================
 archive/
-*.csv
+USTC-TFC2016*/
+CIRA-CIC-DoHBrw-2020*/
+data/raw/
+data/processed/
+data/combined/
+data/.ustc_cache/
+*.ustc_cache/
+
+# Binary capture and parquet formats
 *.pcap
 *.pcapng
+*.cap
+*.parquet
 *.zip
 *.tar.gz
 *.gz
-*.parquet
+*.7z
+*.rar
+
+# Generated Evaluation / CSV Reports
+data/*_eval_results.csv
+*threat_report*.csv
+
+# Ignore large raw CSV datasets by default
+*.csv
+
+# ==============================================================================
+# Whitelist Demo & Test Datasets (Required for Streamlit UI & Unit Tests)
+# ==============================================================================
+!data/sample_batch.csv
+!data/sample_traffic.pcap
+!data/test_threat_detection_with_ground_truth.csv
+!data/test_threat_detection_unlabelled.csv
+!data/sample_*.json
+!data/feature_columns.json
